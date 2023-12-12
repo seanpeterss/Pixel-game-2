@@ -1,0 +1,106 @@
+import pygame
+import sys
+import random
+
+# Initialize Pygame
+pygame.init()
+
+# Constants
+WIDTH, HEIGHT = 800, 600
+FPS = 60
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+PLAYER_SIZE = 50
+PLAYER_SPEED = 8
+ENEMY_SIZE = 30
+ENEMY_SPEED = 5
+MAX_ENEMIES = 10
+FONT_SIZE = 36
+GAME_OVER_FONT_SIZE = 72
+BACKGROUND_COLOR = (135, 206, 250)  # Light Sky Blue
+
+# Create the game window
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Pixel Dodge Game")
+clock = pygame.time.Clock()
+
+# Load player image
+player_image = pygame.Surface((PLAYER_SIZE, PLAYER_SIZE))
+player_image.fill(WHITE)
+player_rect = player_image.get_rect(center=(WIDTH // 2, HEIGHT - 50))
+
+# Create a group for enemies
+enemies = pygame.sprite.Group()
+
+# Fonts
+font = pygame.font.Font(None, FONT_SIZE)
+game_over_font = pygame.font.Font(None, GAME_OVER_FONT_SIZE)
+
+# Sound effects
+pygame.mixer.init()
+pygame.mixer.music.load("background_music.mp3")
+pygame.mixer.music.set_volume(0.3)
+pygame.mixer.music.play(-1)  # Loop the background music
+game_over_sound = pygame.mixer.Sound("game_over.wav")
+
+# Game variables
+score = 0
+game_over = False
+
+# Game loop
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+    if not game_over:
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT] and player_rect.left > 0:
+            player_rect.x -= PLAYER_SPEED
+        if keys[pygame.K_RIGHT] and player_rect.right < WIDTH:
+            player_rect.x += PLAYER_SPEED
+
+        # Spawn enemies
+        if random.randint(0, 100) < 5 and len(enemies) < MAX_ENEMIES:
+            enemy = pygame.Surface((ENEMY_SIZE, ENEMY_SIZE))
+            enemy.fill(BLACK)
+            enemy_rect = enemy.get_rect(center=(random.randint(0, WIDTH), 0))
+            enemies.add(enemy_rect)
+
+        # Update enemy positions
+        for enemy_rect in enemies:
+            enemy_rect.y += ENEMY_SPEED
+            if enemy_rect.y > HEIGHT:
+                enemies.remove(enemy_rect)
+                score += 1
+
+        # Check for collisions with the player
+        if pygame.sprite.spritecollide(player_rect, enemies, False):
+            game_over = True
+            game_over_sound.play()
+
+    # Drawing
+    screen.fill(BACKGROUND_COLOR)
+
+    for enemy_rect in enemies:
+        screen.blit(pygame.Surface((ENEMY_SIZE, ENEMY_SIZE)), enemy_rect)
+
+    screen.blit(player_image, player_rect)
+
+    # Display score
+    score_text = font.render(f"Score: {score}", True, BLACK)
+    screen.blit(score_text, (10, 10))
+
+    if game_over:
+        game_over_text = game_over_font.render("Game Over", True, BLACK)
+        screen.blit(game_over_text, (WIDTH // 2 - 150, HEIGHT // 2 - 50))
+        score_text = font.render(f"Score: {score}", True, BLACK)
+        screen.blit(score_text, (WIDTH // 2 - 60, HEIGHT // 2 + 50))
+
+    pygame.display.flip()
+    clock.tick(FPS)
+
+# Quit the game
+pygame.quit()
+sys.exit()
